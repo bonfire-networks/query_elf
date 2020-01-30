@@ -22,3 +22,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 query_elf-*.tar
 
+# Ignore elixir linter files
+.elixir_ls/
