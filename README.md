@@ -18,3 +18,11 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/query_elf](https://hexdocs.pm/query_elf).
+
+## License
+
+Copyright (c) 2020 Up Learn.
+
+Query Elf source code is released under Apache License 2.0.
+
+Check [LICENSE](LICENSE) file for more information.
