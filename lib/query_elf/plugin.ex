@@ -7,5 +7,5 @@ defmodule QueryElf.Plugin do
   Takes the query, the builder, and the options given to the `build_query` function build the query
   as arguments. Should return the modified query.
   """
-  @callback build_query(QueryElf.query(), module, QueryElf.options()) :: QueryElf.query()
+  @callback build_query(Ecto.Query.t(), module, QueryElf.options()) :: Ecto.Query.t()
 end
