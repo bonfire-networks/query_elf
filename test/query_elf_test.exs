@@ -1,4 +1,4 @@
-defmodule QueryElf.EctoTest do
+defmodule QueryElfTest do
   use ExUnit.Case, async: true
 
   import Ecto.Query
@@ -16,7 +16,6 @@ defmodule QueryElf.EctoTest do
 
   defmodule QB do
     use QueryElf,
-      adapter: QueryElf.Ecto,
       schema: TestSchema,
       searchable_fields: ~w[id my_int my_string my_bool my_date]a,
       sortable_fields: ~w[my_int my_bool]a
@@ -136,7 +135,7 @@ defmodule QueryElf.EctoTest do
 
   describe "reusable_join/{4,5}" do
     test "works like a regular join when used once per alias" do
-      import QueryElf.Ecto, only: [reusable_join: 5]
+      import QueryElf, only: [reusable_join: 5]
 
       assert_equal_queries(
         reusable_join("table", :left, [t1], t2 in "other_table", on: t1.id == t2.id, as: :other),
@@ -154,7 +153,7 @@ defmodule QueryElf.EctoTest do
     end
 
     test "does nothing if a join already exists with the same alias" do
-      import QueryElf.Ecto, only: [reusable_join: 5]
+      import QueryElf, only: [reusable_join: 5]
 
       query = join("table", :left, [t1], t2 in "other_table", on: t1.id == t2.id, as: :other)
 

@@ -35,8 +35,8 @@ defmodule QueryElf.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:ecto, "~> 2.1 or ~> 3.0"},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
-      {:ecto, "~> 2.1 or ~> 3.0", optional: true},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
