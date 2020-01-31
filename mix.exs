@@ -4,7 +4,7 @@ defmodule QueryElf.MixProject do
   def project do
     [
       app: :query_elf,
-      version: "0.1.0",
+      version: "0.2.0",
       description: description(),
       source_url: "https://gitlab.com/up-learn-uk/query-elf",
       package: package(),
@@ -15,7 +15,7 @@ defmodule QueryElf.MixProject do
   end
 
   defp description do
-    "A helper to build the most common database queries for Ecto (and potentially other backends)."
+    "A helper to build the most common database queries for Ecto."
   end
 
   defp package() do
