@@ -15,7 +15,7 @@ defmodule QueryElf.MixProject do
   end
 
   defp description do
-    "A helper to build the most common database queries for Ecto (and potentially other backends)."
+    "A helper to build the most common database queries for Ecto."
   end
 
   defp package() do
