@@ -10,7 +10,8 @@ defmodule QueryElf.MixProject do
       package: package(),
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      docs: docs()
     ]
   end
 
@@ -38,6 +39,26 @@ defmodule QueryElf.MixProject do
       {:ecto, "~> 2.1 or ~> 3.0"},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      extras: extras(),
+      groups_for_extras: groups_for_extras()
+    ]
+  end
+
+  defp extras do
+    [
+      "guides/basic_usage.md",
+      "guides/advanced_usage.md"
+    ]
+  end
+
+  defp groups_for_extras do
+    [
+      Guides: ~r/guides\/[^\/]+\.md/
     ]
   end
 end

@@ -99,10 +99,12 @@ More examples:
 
 Clone the repo and fetch its dependencies:
 
-    $ git clone https://gitlab.com/up-learn-uk/query-elf.git
-    $ cd query-elf
-    $ mix deps.get
-    $ mix test
+```bash
+git clone https://gitlab.com/up-learn-uk/query-elf.git
+cd query-elf
+mix deps.get
+mix test
+```
 
 ## Contributing
 
