@@ -2,59 +2,80 @@ defmodule QueryElf do
   @moduledoc """
   Defines an Ecto query builder.
 
-  Here's a simple usage example:
+  It accepts the following options:
+
+    * `:schema` - the `Ecto.Schema` for which the queries will be built (required)
+    * `:searchable_fields` - a list of fields to build default filters for. This option is simply a
+      shorthand syntax for using the `QueryElf.Plugins.AutomaticFilters` plugin with the given list
+      as the `fields` option. You should check the plugin's documentation for more details.
+      (default: `[]`)
+    * `:sortable_fields` - a list of fields to build default sorters for. This option is simply a
+      shorthand syntax for using the `QueryElf.Plugins.AutomaticSorters` plugin with the given list
+      as the `fields` option. You should check the plugin's documentation for more details.
+      (default: `[]`)
+    * `:plugins` - a list of plugins that can be used to increment the query builder's
+      functionality. See `QueryElf.Plugin` for more details. (default: `[]`)
+
+  ### Example
 
       defmodule MyQueryBuilder do
         use QueryElf,
           schema: MySchema,
-          searchable_fields: [:id, :name]
+          searchable_fields: [:id, :name],
+          plugins: [
+            {QueryElf.Plugins.OffsetPagination, default_per_page: 10},
+            MyCustomPlugin
+          ]
 
-        def filter(:my_extra_filter, value, _query) do
+        def filter(:my_filter, value, _query) do
           dynamic([s], s.some_field - ^value == 0)
         end
       end
 
-      MyQueryBuilder.build_query(id__in: [1, 2, 3], my_extra_filter: 10)
+      MyQueryBuilder.build_query(id__in: [1, 2, 3], my_filter: 10)
 
-  It accepts the following options:
+  ### Sharing plugins and configuration accross query builders
 
-    * `:schema` - the `Ecto.Schema` for which the queries will be built (required)
-    * `:searchable_fields` - a list of fields to build default filters for (default: `[]`)
-    * `:sortable_fields` - a list of fields to build default sorters for (default: `[]`)
-    * `:plugins` - a list of plugins that can be used to increment the query builder's
-      functionality. (default: `[]`)
+  Sometimes you have certain plugins that you wish to always use, while allowing some degree of
+  fexibility to each individual query builder definition. For those scenarios, you can use something
+  like the following:
 
-  If used, the `:searchable_fields` option will define the following filters (according to the field
-  type in the schema):
+      defmodule MyQueryElf do
+        defmacro __using__(opts) do
+          # Always define filters for the `id` field
+          searchable_fields = (opts[:searchable_fields] || []) ++ [:id]
 
-    * `id` or `binary_id`:
-      * `:$FIELD` - checks if the field is equal to the given value
-      * `:$FIELD__neq` - checks if the field is different from the given value
-      * `:$FIELD__in` - checks if the field is contained in the given enumerable
-    * `boolean`:
-      * `:$FIELD` - checks if the field is equal to the given value
-    * `integer`, `float` or `decimal`:
-      * `:$FIELD` - checks if the field is equal to the given value
-      * `:$FIELD__neq` - checks if the field is different from the given value
-      * `:$FIELD__in` - checks if the field is contained in the given enumerable
-      * `:$FIELD__gt` - checks if the field is greater than the given value
-      * `:$FIELD__lt` - checks if the field is lower than the given value
-      * `:$FIELD__gte` - checks if the field is greater than or equal to the given value
-      * `:$FIELD__lte` - checks if the field is lower than or equal to the given value
-    * `string`:
-      * `:$FIELD` - checks if the field is equal to the given value
-      * `:$FIELD__neq` - checks if the field is different from the given value
-      * `:$FIELD__in` - checks if the field is contained in the given enumerable
-      * `:$FIELD__contains` - checks if the field contains the given string
-      * `:$FIELD__starts_with` - checks if the field starts with the given string
-      * `:$FIELD__ends_with` - checks if the field ends with the given string
-    * `date`, `time`, `naive_datetime`, `datetime`, `time_usec`, `naive_datetime_usec` or
-      `datetime_usec`:
-      * `:$FIELD` - checks if the field is equal to the given value
-      * `:$FIELD__neq` - checks if the field is different from the given value
-      * `:$FIELD__in` - checks if the field is contained in the given enumerable
-      * `:$FIELD__after` - checks if the field occurs after the given value
-      * `:$FIELD__before` - checks if the field occurs before the given value
+          # Always define a sorter for the `id` field
+          sortable_fields = (opts[:sortable_fields] || []) ++ [:id]
+
+          # Use a default per page of `20`, but allow the user to change this value
+          default_per_page = opts[:default_per_page] || 20
+
+          # Allow the user to include extra plugins
+          extra_plugins = opts[:plugins] || []
+
+          quote do
+            use QueryElf,
+              schema: unquote(opts[:schema]),
+              plugins: [
+                {QueryElf.Plugins.AutomaticFilters, fields: unquote(searchable_fields)},
+                {QueryElf.Plugins.AutomaticSorters, fields: unquote(sortable_fields)},
+                {QueryElf.Plugins.OffsetPagination, default_per_page: unquote(default_per_page)},
+                # put any other plugins here
+              ] ++ unquote(extra_plugins)
+          end
+        end
+      end
+
+      defmodule MyQueryBuilder do
+        use MyQueryElf,
+          schema: MySchema,
+          searchable_fields: ~w[id name age is_active roles]a
+      end
+
+  Using this strategy you can create a re-usable set of default plugins (and plugin configurations)
+  that best suits your application needs, while allowing you to use `QueryElf` without these
+  defaults if you ever need to.
   """
 
   @type sort_direction :: :asc | :desc
@@ -148,7 +169,7 @@ defmodule QueryElf do
   """
   @callback base_query :: Ecto.Query.t()
 
-  @optional_callbacks [sort: 4, base_query: 0]
+  @optional_callbacks [filter: 3, sort: 4, base_query: 0]
 
   import Ecto.Query
 
@@ -171,7 +192,7 @@ defmodule QueryElf do
   As an added bonus, there will be only one join in the query that can be reused by multiple
   filters.
   """
-  defmacro reusable_join(query, qual, bindings \\ [], expr, opts) do
+  defmacro reusable_join(query, qual, bindings, expr, opts) do
     quote do
       query = Ecto.Queryable.to_query(unquote(query))
       join_alias = unquote(Keyword.fetch!(opts, :as))
@@ -186,34 +207,37 @@ defmodule QueryElf do
 
   @doc false
   defmacro __using__(opts) do
-    {schema, []} =
-      opts
-      |> Keyword.fetch!(:schema)
-      |> Code.eval_quoted([], __CALLER__)
-
-    {searchable_fields, []} =
-      opts
-      |> Keyword.get(:searchable_fields, [])
-      |> Code.eval_quoted([], __CALLER__)
-
-    {sortable_fields, []} =
-      opts
-      |> Keyword.get(:sortable_fields, [])
-      |> Code.eval_quoted([], __CALLER__)
-
-    plugins = Keyword.get(opts, :plugins, [])
-    default_per_page = Keyword.get(opts, :default_per_page, 25)
-
-    quote do
+    quote bind_quoted: [opts: opts] do
       import Ecto.Query
-      import unquote(__MODULE__), only: [reusable_join: 4, reusable_join: 5]
+      import QueryElf, only: [reusable_join: 5]
 
-      @schema unquote(schema)
-      @query_builder_plugins unquote(plugins)
-      @query_builder_default_per_page unquote(default_per_page)
-      @behaviour unquote(__MODULE__)
-      @before_compile unquote(__MODULE__)
-      @on_definition unquote(__MODULE__)
+      schema = Keyword.fetch!(opts, :schema)
+
+      plugins =
+        opts
+        |> Keyword.get(:plugins, [])
+        |> Enum.map(fn
+          plugin when is_atom(plugin) -> {plugin, []}
+          {plugin, opts} when is_atom(plugin) -> {plugin, opts}
+        end)
+
+      plugins =
+        case Keyword.fetch(opts, :searchable_fields) do
+          {:ok, fields} -> [{QueryElf.Plugins.AutomaticFilters, fields: fields} | plugins]
+          :error -> plugins
+        end
+
+      plugins =
+        case Keyword.fetch(opts, :sortable_fields) do
+          {:ok, fields} -> [{QueryElf.Plugins.AutomaticSorters, fields: fields} | plugins]
+          :error -> plugins
+        end
+
+      @schema schema
+      @query_builder_plugins plugins
+      @behaviour QueryElf
+      @before_compile QueryElf
+      @on_definition QueryElf
 
       Module.register_attribute(__MODULE__, :query_builder_filters, accumulate: true)
       Module.register_attribute(__MODULE__, :query_builder_sorters, accumulate: true)
@@ -224,16 +248,9 @@ defmodule QueryElf do
 
       defoverridable base_query: 0
 
-      unquote(
-        for field <- searchable_fields,
-            type = schema.__schema__(:type, field),
-            do: define_filter_for_field(field, type)
-      )
-
-      unquote(
-        for field <- sortable_fields,
-            do: define_order_by_for_field(field)
-      )
+      plugins
+      |> Enum.map(fn {plugin, opts} -> plugin.using(opts) end)
+      |> Code.eval_quoted([], __ENV__)
     end
   end
 
@@ -307,10 +324,6 @@ defmodule QueryElf do
       def __query_builder__(:sorters) do
         Enum.sort(@query_builder_sorters)
       end
-
-      def __query_builder__(:default_per_page) do
-        @query_builder_default_per_page
-      end
     end
   end
 
@@ -318,7 +331,6 @@ defmodule QueryElf do
   def build_query(builder, query, filter, plugins, options) do
     query
     |> apply_filter(builder, filter)
-    |> apply_pagination(builder, options[:page], options[:per_page])
     |> apply_ordering(builder, options[:order] || [])
     |> apply_plugins(builder, plugins, options)
   end
@@ -327,21 +339,6 @@ defmodule QueryElf do
     {query, [dynamic]} = filter({:_and, filter}, {query, []}, builder)
 
     where(query, ^dynamic)
-  end
-
-  defp apply_pagination(query, builder, page, per_page)
-
-  defp apply_pagination(query, _builder, nil, _per_page), do: query
-
-  defp apply_pagination(query, builder, page, nil),
-    do: apply_pagination(query, builder, page, builder.__query_builder__(:default_per_page))
-
-  defp apply_pagination(query, _builder, page, per_page) do
-    offset = (page - 1) * per_page
-
-    query
-    |> limit(^per_page)
-    |> offset(^offset)
   end
 
   defp apply_ordering(query, builder, order_instructions) do
@@ -358,7 +355,7 @@ defmodule QueryElf do
   end
 
   defp apply_plugins(query, builder, plugins, options) do
-    Enum.reduce(plugins, query, fn plugin, query ->
+    Enum.reduce(plugins, query, fn {plugin, _plugin_options}, query ->
       plugin.build_query(query, builder, options)
     end)
   end
@@ -388,106 +385,6 @@ defmodule QueryElf do
     case builder.filter(filter, value, query) do
       {query, dynamic} -> {query, [dynamic | dynamics]}
       dynamic -> {query, [dynamic | dynamics]}
-    end
-  end
-
-  defp define_filter_for_field(field, id_type) when id_type in ~w[id binary_id]a do
-    equality_filter(field)
-  end
-
-  defp define_filter_for_field(field, :boolean) do
-    quote do
-      def filter(unquote(field), value, _query) do
-        dynamic([s], field(s, unquote(field)) == ^value)
-      end
-    end
-  end
-
-  defp define_filter_for_field(field, number_type)
-       when number_type in ~w[integer float decimal]a do
-    quote do
-      unquote(equality_filter(field))
-
-      def filter(unquote(:"#{field}__gt"), value, _query) do
-        dynamic([s], field(s, unquote(field)) > ^value)
-      end
-
-      def filter(unquote(:"#{field}__lt"), value, _query) do
-        dynamic([s], field(s, unquote(field)) < ^value)
-      end
-
-      def filter(unquote(:"#{field}__gte"), value, _query) do
-        dynamic([s], field(s, unquote(field)) >= ^value)
-      end
-
-      def filter(unquote(:"#{field}__lte"), value, _query) do
-        dynamic([s], field(s, unquote(field)) <= ^value)
-      end
-    end
-  end
-
-  defp define_filter_for_field(field, date_type)
-       when date_type in ~w[date time naive_datetime utc_datetime time_usec naive_datetime_usec utc_datetime_usec]a do
-    quote do
-      unquote(equality_filter(field))
-
-      def filter(unquote(:"#{field}__after"), value, _query) do
-        dynamic([s], field(s, unquote(field)) > ^value)
-      end
-
-      def filter(unquote(:"#{field}__before"), value, _query) do
-        dynamic([s], field(s, unquote(field)) < ^value)
-      end
-    end
-  end
-
-  defp define_filter_for_field(field, :string) do
-    quote do
-      unquote(equality_filter(field))
-
-      def filter(unquote(:"#{field}__contains"), value, _query) do
-        dynamic([s], like(field(s, unquote(field)), ^"%#{value}%"))
-      end
-
-      def filter(unquote(:"#{field}__starts_with"), value, _query) do
-        dynamic([s], like(field(s, unquote(field)), ^"#{value}%"))
-      end
-
-      def filter(unquote(:"#{field}__ends_with"), value, _query) do
-        dynamic([s], like(field(s, unquote(field)), ^"%#{value}"))
-      end
-    end
-  end
-
-  defp define_filter_for_field(_field, {:array, _}) do
-    []
-  end
-
-  defp define_order_by_for_field(field) do
-    quote do
-      def sort(unquote(field), direction, _args, query) do
-        order_by(query, [s], [{^direction, field(s, unquote(field))}])
-      end
-    end
-  end
-
-  defp equality_filter(field) do
-    quote do
-      def filter(unquote(field), value, _query) do
-        dynamic([s], field(s, unquote(field)) == ^value)
-      end
-
-      def filter(unquote(:"#{field}__neq"), value, _query) do
-        dynamic([s], field(s, unquote(field)) != ^value)
-      end
-
-      def filter(unquote(:"#{field}__in"), value, _query) do
-        dynamic([s], field(s, unquote(field)) in ^value)
-      end
-
-      def filter(unquote(:"#{field}__not_in"), value, _query) do
-        dynamic([s], field(s, unquote(field)) not in ^value)
-      end
     end
   end
 end

@@ -27,92 +27,32 @@ defmodule QueryElfTest do
     assert_equal_queries(QB.build_query([], order: [asc: :my_int, desc: :my_bool]), target_query)
 
     assert_equal_queries(
+      QB.build_query([], order: [asc: {:my_int, nil}, desc: {:my_bool, nil}]),
+      target_query
+    )
+
+    assert_equal_queries(
       QB.build_query([],
         order: [%{field: :my_int, direction: :asc}, %{field: :my_bool, direction: :desc}]
       ),
       target_query
     )
+
+    assert_equal_queries(
+      QB.build_query([],
+        order: [
+          %{field: :my_int, direction: :asc, extra_argument: nil},
+          %{field: :my_bool, direction: :desc, extra_argument: nil}
+        ]
+      ),
+      target_query
+    )
   end
 
-  test "allows filtering via an id field" do
+  test "allows filtering" do
     assert_equal_queries(QB.build_query(id: 1), where(TestSchema, id: ^1))
     assert_equal_queries(QB.build_query(id__neq: 1), where(TestSchema, [s], s.id != ^1))
     assert_equal_queries(QB.build_query(id__in: [1, 2]), where(TestSchema, [s], s.id in ^[1, 2]))
-  end
-
-  test "allows filtering via an integer field" do
-    assert_equal_queries(QB.build_query(my_int: 1), where(TestSchema, my_int: ^1))
-    assert_equal_queries(QB.build_query(my_int__neq: 1), where(TestSchema, [s], s.my_int != ^1))
-
-    assert_equal_queries(QB.build_query(my_int__gt: 1), where(TestSchema, [s], s.my_int > ^1))
-    assert_equal_queries(QB.build_query(my_int__lt: 1), where(TestSchema, [s], s.my_int < ^1))
-    assert_equal_queries(QB.build_query(my_int__gte: 1), where(TestSchema, [s], s.my_int >= ^1))
-    assert_equal_queries(QB.build_query(my_int__lte: 1), where(TestSchema, [s], s.my_int <= ^1))
-
-    assert_equal_queries(
-      QB.build_query(my_int__in: [1, 2]),
-      where(TestSchema, [s], s.my_int in ^[1, 2])
-    )
-  end
-
-  test "allows filtering via a string field" do
-    assert_equal_queries(QB.build_query(my_string: "a"), where(TestSchema, my_string: ^"a"))
-
-    assert_equal_queries(
-      QB.build_query(my_string__neq: "a"),
-      where(TestSchema, [s], s.my_string != ^"a")
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_string__contains: "a"),
-      where(TestSchema, [s], like(s.my_string, ^"%a%"))
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_string__starts_with: "a"),
-      where(TestSchema, [s], like(s.my_string, ^"a%"))
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_string__ends_with: "a"),
-      where(TestSchema, [s], like(s.my_string, ^"%a"))
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_string__in: ["a", "b"]),
-      where(TestSchema, [s], s.my_string in ^["a", "b"])
-    )
-  end
-
-  test "allows filtering via a boolean field" do
-    assert_equal_queries(QB.build_query(my_bool: true), where(TestSchema, my_bool: ^true))
-  end
-
-  test "allows filtering via a date field" do
-    assert_equal_queries(
-      QB.build_query(my_date: ~D[2019-01-01]),
-      where(TestSchema, my_date: ^~D[2019-01-01])
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_date__neq: ~D[2019-01-01]),
-      where(TestSchema, [s], s.my_date != ^~D[2019-01-01])
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_date__after: ~D[2019-01-01]),
-      where(TestSchema, [s], s.my_date > ^~D[2019-01-01])
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_date__before: ~D[2019-01-01]),
-      where(TestSchema, [s], s.my_date < ^~D[2019-01-01])
-    )
-
-    assert_equal_queries(
-      QB.build_query(my_date__in: [~D[2019-01-01], ~D[2019-01-04]]),
-      where(TestSchema, [s], s.my_date in ^[~D[2019-01-01], ~D[2019-01-04]])
-    )
   end
 
   test "allows for complex criteria composition" do
@@ -131,6 +71,34 @@ defmodule QueryElfTest do
           ((s.my_int == ^1 and s.id == ^"a") or (s.my_int == ^2 and s.id == ^"b"))
       )
     )
+  end
+
+  test "requires the fields in defined filters to be literal atoms" do
+    assert_raise CompileError,
+                 ~r/The first argument to filter\/3 must always be a literal atom/,
+                 fn ->
+                   defmodule QBFilterError do
+                     use QueryElf,
+                       schema: TestSchema
+
+                     def filter(_my_field, _arg, _query) do
+                     end
+                   end
+                 end
+  end
+
+  test "requires the fields in defined sorters to be literal atoms" do
+    assert_raise CompileError,
+                 ~r/The first argument to sort\/4 must always be a literal atom/,
+                 fn ->
+                   defmodule QBSortError do
+                     use QueryElf,
+                       schema: TestSchema
+
+                     def sort(_my_field, _direction, _extra_arg, _query) do
+                     end
+                   end
+                 end
   end
 
   describe "reusable_join/{4,5}" do

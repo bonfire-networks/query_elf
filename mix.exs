@@ -38,7 +38,8 @@ defmodule QueryElf.MixProject do
     [
       {:ecto, "~> 2.1 or ~> 3.0"},
       {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false}
     ]
   end
 
