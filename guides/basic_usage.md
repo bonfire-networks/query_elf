@@ -68,7 +68,7 @@ User.QueryBuilder.build_query(
 |> Repo.all()
 ```
 
-Information about what filters (`__in`, `__before`, etc) are defined for each field type is specified in [the module docs](https://hexdocs.pm/query_elf/QueryElf.html#content).
+For more information about what filters (`__in`, `__before`, etc) are defined for each field type, check the documentation for the `searchable_fields` option [here](`QueryElf`).
 
 ## Basic ordering/sorting
 
