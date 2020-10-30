@@ -4,7 +4,7 @@ defmodule QueryElf.MixProject do
   def project do
     [
       app: :query_elf,
-      version: "0.2.0",
+      version: "0.3.0",
       description: description(),
       source_url: "https://gitlab.com/up-learn-uk/query-elf",
       package: package(),
