@@ -167,7 +167,7 @@ defmodule QueryElf do
       end
 
   """
-  @callback base_query :: Ecto.Query.t()
+  @callback base_query :: Ecto.Queryable.t()
 
   @optional_callbacks [filter: 3, sort: 4, base_query: 0]
 
