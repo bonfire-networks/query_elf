@@ -212,6 +212,7 @@ defmodule QueryElf do
       import QueryElf, only: [reusable_join: 5]
 
       schema = Keyword.fetch!(opts, :schema)
+      # IO.inspect(schema: Keyword.fetch!(opts, :schema))
 
       plugins =
         opts

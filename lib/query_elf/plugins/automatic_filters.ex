@@ -68,6 +68,8 @@ defmodule QueryElf.Plugins.AutomaticFilters do
       fields
       |> Enum.map(fn field ->
         type = @schema.__schema__(:type, field)
+        # IO.inspect(field: field)
+        # IO.inspect(type: type)
 
         QueryElf.Plugins.AutomaticFilters.__define_filters__(field, type)
       end)
@@ -75,9 +77,11 @@ defmodule QueryElf.Plugins.AutomaticFilters do
     end
   end
 
+  @id_types Application.get_env(:query_elf, :id_types, [:id, :binary_id])
+
   @doc false
   @spec __define_filters__(field :: atom, type :: Ecto.Type.t()) :: Macro.t()
-  def __define_filters__(field, id_type) when id_type in ~w[id binary_id]a do
+  def __define_filters__(field, id_type) when id_type in @id_types do
     equality_filter(field)
   end
 
@@ -150,6 +154,7 @@ defmodule QueryElf.Plugins.AutomaticFilters do
   end
 
   defp equality_filter(field) do
+    # IO.inspect(equality_filter: field)
     quote do
       def filter(unquote(field), value, _query) do
         dynamic([s], field(s, unquote(field)) == ^value)
