@@ -61,10 +61,9 @@ defmodule QueryElf.Plugins.AutomaticFilters do
 
   @impl QueryElf.Plugin
   def using(opts) do
-    IO.inspect(opts: opts)
 
     fields = Keyword.fetch!(opts, :fields)
-    IO.inspect(fields: fields)
+    # IO.inspect(fields: fields)
 
     quote bind_quoted: [fields: fields] do
       require QueryElf.Plugins.AutomaticFilters
@@ -87,7 +86,7 @@ defmodule QueryElf.Plugins.AutomaticFilters do
   @doc false
   @spec __define_filters__(field :: atom, type :: Ecto.Type.t()) :: Macro.t()
   def __define_filters__(field, id_type) when id_type in @id_types do
-    Logger.info("query_elf: equality_filter on `#{field}` of type `#{id_type}`")
+    # Logger.info("query_elf: equality_filter on `#{field}` of type `#{id_type}`")
     equality_filter(field)
   end
 
