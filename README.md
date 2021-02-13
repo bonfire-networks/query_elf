@@ -2,19 +2,7 @@
 
 > A helper to build the most common database queries for [Ecto](https://hexdocs.pm/ecto/Ecto.html).
 
-## Installation
-
-Install from [Hex.pm](https://hex.pm/packages/query_elf):
-
-```elixir
-def deps do
-  [{:query_elf, "~> 0.2.0"}]
-end
-```
-
-## Documentation
-
-API documentation is available at [https://hexdocs.pm/query_elf](https://hexdocs.pm/query_elf/api-reference.html)
+Forked from https://gitlab.com/up-learn-uk/query-elf
 
 ## Usage
 
@@ -95,24 +83,27 @@ More examples:
   |> reusable_join(:left, [t1], t2 in "other_table", on: t1.id == t2.id, as: :other_b)
 ```
 
+## Documentation
+
+API documentation is available at [https://hexdocs.pm/query_elf](https://hexdocs.pm/query_elf/api-reference.html)
+
 ## Running tests
 
 Clone the repo and fetch its dependencies:
 
 ```bash
-git clone https://gitlab.com/up-learn-uk/query-elf.git
-cd query-elf
 mix deps.get
 mix test
 ```
 
 ## Contributing
 
-We appreciate any contribution to QueryElf. Check our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [CONTRIBUTING.md](CONTRIBUTING.md) guides for more information. We usually keep a list of features and bugs [in the issue tracker](https://gitlab.com/up-learn-uk/query-elf/issues).
+We appreciate any contribution here or to the upstream QueryElf. Check their [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [CONTRIBUTING.md](CONTRIBUTING.md) guides, and [issue tracker](https://gitlab.com/up-learn-uk/query-elf/issues).
 
 ## Copyright and License
 
-Copyright (c) 2020 Up Learn.
+Copyright (c) 2020 Up Learn
+Copyright (c) 2021 Bonfire
 
 Query Elf source code is released under Apache License 2.0.
 
