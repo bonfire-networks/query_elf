@@ -9,7 +9,7 @@ defmodule QueryElf.Plugins.AutomaticFilters do
   The defined filters will vary according to the field type in the schema:
 
     * `id` or `binary_id`:
-      * `:$FIELD` - checks if the field is equal to the given value
+      * `:$FIELD` - checks if the field is equal to the given value (though if value is a list, this is equivalent to `:$FIELD__in`)
       * `:$FIELD__neq` - checks if the field is different from the given value
       * `:$FIELD__in` - checks if the field is contained in the given enumerable
       * `:$FIELD__not_in` - checks if the field is not contained in the given enumerable
@@ -57,10 +57,14 @@ defmodule QueryElf.Plugins.AutomaticFilters do
   """
 
   use QueryElf.Plugin
+  require Logger
 
   @impl QueryElf.Plugin
   def using(opts) do
+    IO.inspect(opts: opts)
+
     fields = Keyword.fetch!(opts, :fields)
+    IO.inspect(fields: fields)
 
     quote bind_quoted: [fields: fields] do
       require QueryElf.Plugins.AutomaticFilters
@@ -78,10 +82,12 @@ defmodule QueryElf.Plugins.AutomaticFilters do
   end
 
   @id_types Application.get_env(:query_elf, :id_types, [:id, :binary_id])
+  Logger.info("query_elf: id_types: `#{inspect @id_types}`")
 
   @doc false
   @spec __define_filters__(field :: atom, type :: Ecto.Type.t()) :: Macro.t()
   def __define_filters__(field, id_type) when id_type in @id_types do
+    Logger.info("query_elf: equality_filter on `#{field}` of type `#{id_type}`")
     equality_filter(field)
   end
 
@@ -149,13 +155,18 @@ defmodule QueryElf.Plugins.AutomaticFilters do
     end
   end
 
-  def __define_filters__(_field, _type) do
+  def __define_filters__(field, type) do
+    Logger.error("query_elf: No implemented support for filtering type `#{inspect type}` on field `#{field}`")
     []
   end
 
   defp equality_filter(field) do
-    # IO.inspect(equality_filter: field)
     quote do
+
+      def filter(unquote(field), value, _query) when is_list(value) do
+        dynamic([s], field(s, unquote(field)) in ^value)
+      end
+
       def filter(unquote(field), value, _query) do
         dynamic([s], field(s, unquote(field)) == ^value)
       end
