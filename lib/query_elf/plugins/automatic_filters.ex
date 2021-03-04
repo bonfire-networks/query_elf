@@ -40,6 +40,14 @@ defmodule QueryElf.Plugins.AutomaticFilters do
       * `:$FIELD__not_in` - checks if the field is not contained in the given enumerable
       * `:$FIELD__after` - checks if the field occurs after the given value
       * `:$FIELD__before` - checks if the field occurs before the given value
+    * `array`:
+      * `:$FIELD__contains`
+    * `map`:
+      * `:$FIELD` and with a value formated as {:send_newsletter, :equals, true}
+    * `{:array, _}` (nested maps):
+      * `:$FIELD` and with a value formated as [{:send_newsletter, [{:weekly, :equals, true}]}]
+    * `{:array, :map}` (arrays of maps):
+      * `:$FIELD` and with a value formated as {:city, :equals, "Kyiv"}]
 
   Any other types are simply ignored.
 
@@ -57,6 +65,7 @@ defmodule QueryElf.Plugins.AutomaticFilters do
   """
 
   use QueryElf.Plugin
+  # import Ecto.Query
   require Logger
 
   @impl QueryElf.Plugin
@@ -71,6 +80,7 @@ defmodule QueryElf.Plugins.AutomaticFilters do
       fields
       |> Enum.map(fn field ->
         type = @schema.__schema__(:type, field)
+
         # IO.inspect(field: field)
         # IO.inspect(type: type)
 
@@ -154,6 +164,48 @@ defmodule QueryElf.Plugins.AutomaticFilters do
     end
   end
 
+  def __define_filters__(field, {:array, :map}) do
+    quote do
+      def filter(unquote(field), conditions, _query) do
+        conditions =
+          conditions
+          |> QueryElf.Plugins.AutomaticFilters.prepare_map_conditions()
+          |> List.wrap()
+
+        dynamic([s], fragment("? @> ?", field(s, unquote(field)), ^conditions))
+      end
+    end
+  end
+
+  def __define_filters__(field, {:array, _}) do
+    quote do
+      def filter(unquote(:"#{field}__contains"), value, _query) do
+        dynamic([s], fragment("? @> ?", field(s, unquote(field)), ^value))
+      end
+    end
+  end
+
+  def __define_filters__(field, :map) do
+    IO.inspect(define_filters__map: field)
+    quote do
+      def filter(unquote(field), conditions, _query) do
+        conditions = QueryElf.Plugins.AutomaticFilters.prepare_map_conditions(conditions)
+
+        dynamic([s], fragment("? @> ?", field(s, unquote(field)), ^conditions))
+      end
+    end
+  end
+
+   def __define_filters__(field, {:map, _}) do
+    quote do
+      def filter(unquote(field), conditions, _query) do
+        conditions = QueryElf.Plugins.AutomaticFilters.prepare_map_conditions(conditions)
+
+        dynamic([s], fragment("? @> ?", field(s, unquote(field)), ^conditions))
+      end
+    end
+  end
+
   def __define_filters__(field, type) do
     Logger.error("query_elf: No implemented support for filtering type `#{inspect type}` on field `#{field}`")
     []
@@ -183,4 +235,22 @@ defmodule QueryElf.Plugins.AutomaticFilters do
       end
     end
   end
+
+  def prepare_map_conditions(acc \\ [], conditions)
+
+  def prepare_map_conditions(acc, []), do: Map.new(acc)
+
+  def prepare_map_conditions(acc, [{field, :equals, value} | tail]) do
+    prepare_map_conditions([{field, value} | acc], tail)
+  end
+
+  def prepare_map_conditions(acc, [{field, conditions} | tail]) do
+    prepare_map_conditions([{field, prepare_map_conditions(conditions)} | acc], tail)
+  end
+
+  def prepare_map_conditions(acc, {field, :equals, value}) do
+    prepare_map_conditions([{field, value} | acc], [])
+  end
+
+  def prepare_map_conditions(_, _), do: raise("query_elf: Only :equals or sub-object conditions on JSON map fields are implemented")
 end

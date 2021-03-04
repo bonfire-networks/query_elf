@@ -264,7 +264,7 @@ defmodule QueryElf do
   def __on_definition__(env, :def, :filter, [filter_name, _value, _query], _guards, _body) do
     raise CompileError,
       description: """
-      Illegal filter/3 function defined in #{inspect(env.module)}.
+      Wrong filter/3 function defined in #{inspect(env.module)}.
 
       The first argument to filter/3 must always be a literal atom. You provided: `#{
         Macro.to_string(filter_name)
@@ -281,7 +281,7 @@ defmodule QueryElf do
   def __on_definition__(env, :def, :sort, [order_field, _, _, _], _guards, _body) do
     raise CompileError,
       description: """
-      Illegal sort/4 function defined in #{inspect(env.module)}.
+      Wrong sort/4 function defined in #{inspect(env.module)}.
 
       The first argument to sort/4 must always be a literal atom. You provided: `#{
         Macro.to_string(order_field)
