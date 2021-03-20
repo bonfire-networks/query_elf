@@ -300,13 +300,15 @@ defmodule QueryElf do
         from(base_query(), where: false)
       end
 
-      def build_query(filter) do
-        build_query(base_query(), filter, [])
-      end
+      def build_query(query \\ base_query(), filter, options \\ [])
 
-      def build_query(filter, options) do
-        build_query(base_query(), filter, options)
-      end
+      # def build_query(filter) do
+      #   build_query(base_query(), filter, [])
+      # end
+
+      # def build_query(filter, options) do
+      #   build_query(base_query(), filter, options)
+      # end
 
       def build_query(query, filter, options) do
         unquote(__MODULE__).build_query(
