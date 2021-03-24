@@ -41,61 +41,101 @@ defmodule QueryElf.Plugins.Preloader do
   """
 
   import Ecto, only: [assoc: 2]
+  require QueryElf.Plugins.ReusableJoin
+
   alias Ecto.Query.Builder.{Join, Preload}
 
-  defmacro preload_join(query, association) do
 
-    binding = quote do: [v]
-    expr = quote do: assoc(v, unquote(association))
+  # defp do_preload_join(query, association, bindings, expr, preload_bindings, preload_expr, caller) do
+  #   IO.inspect(query: query)
+  #   # IO.inspect(queryable: Ecto.Queryable.to_query(query))
+  #   # IO.inspect(binding: bindings)
+  #   # IO.inspect(expr: expr)
+  #   # IO.inspect(association: association)
+  #   # IO.inspect(preload_bindings: preload_bindings)
+  #   # IO.inspect(preload_expr: preload_expr)
 
-    preload_bindings = quote do: [{unquote(association), x}]
-    preload_expr = quote do: [{unquote(association), x}]
+  #     query
+  #     |> Join.build(:left, bindings, expr, nil, nil, association, nil, nil, caller)
+  #     # |> reusable_join(:left, (bindings), (expr), as: association)
+  #     |> elem(0)
+  #     # |> IO.inspect
+  #     |> Preload.build(preload_bindings, preload_expr, caller)
+  # end
 
-    do_preload_join(query, association, binding, expr, preload_bindings, preload_expr, __CALLER__)
-  end
-
-  defmacro preload_join(query, via_association, association) do
-
-    binding = quote do: [r, {unquote(via_association), v}]
-    expr = quote do: assoc(v, unquote(association))
-
-    preload_bindings = quote do: [r, v, x]
-
-    # TODO: construct proper preload expr with vars to avoid extra queries
-    # https://github.com/elixir-ecto/ecto/blob/v3.5.7/lib/ecto/query/builder/preload.ex#L37 says we need [foo: {v, bar: x}]
-    # pa = [] ++ [{association, quote do x end}]
-    # pa = [via_association, {quote do v end, pa}]
-    # preload_expr =  [via_association, {quote do v end, pa}]
-    preload_expr = quote do: [{unquote(via_association), unquote(association)}]
-
-    do_preload_join(query, association, binding, expr, preload_bindings, preload_expr, __CALLER__)
-  end
-
-  defmacro preload_join(query, via_association_a, via_association_b, association) do
-
-    binding = quote do: [r, {unquote(via_association_a), a}, {unquote(via_association_b), b}]
-    expr = quote do: assoc(b, unquote(association))
-
-    preload_bindings = quote do: [r, a, b, x]
-    # TODO: construct proper preload expr with vars to avoid extra queries
-    preload_expr = quote do: [{unquote(via_association_a), [{unquote(via_association_b), [unquote(association)]}]}]
-
-    do_preload_join(query, association, binding, expr, preload_bindings, preload_expr, __CALLER__)
-  end
-
-  defp do_preload_join(query, association, binding, expr, preload_bindings, preload_expr, caller) do
+  defmacro do_preload_join(query, association, bindings, expr, preload_bindings, preload_expr, _) do
     # IO.inspect(query: query)
-    # IO.inspect(binding: binding)
+    # IO.inspect(queryable: Ecto.Queryable.to_query(query))
+    # IO.inspect(bindings: bindings)
     # IO.inspect(expr: expr)
     # IO.inspect(association: association)
+
+    opts = quote do: [as: unquote(association)]
+    # IO.inspect(opts: opts)
+
     # IO.inspect(preload_bindings: preload_bindings)
     # IO.inspect(preload_expr: preload_expr)
 
-      query
-      |> Join.build(:left, binding, expr, nil, nil, association, nil, nil, caller)
-      |> elem(0)
+    quote do
+
+      unquote(query)
+      |> QueryElf.Plugins.ReusableJoin.reusable_join(:left, unquote(bindings), unquote(expr), unquote(opts))
+      |> preload(unquote(preload_bindings), unquote(preload_expr))
       # |> IO.inspect
-      |> Preload.build(preload_bindings, preload_expr, caller)
-    # end
+    end
   end
+
+  @doc "Join + Preload an association"
+  defmacro preload_join(query, association) do
+
+    # association = quote do: unquote(association)
+    bindings = quote do: [root]
+    expr = quote do: assoc(root, unquote(association))
+
+    preload_bindings = quote do: [{unquote(association), ass}]
+    preload_expr = quote do: [{unquote(association), ass}]
+
+    quote do: do_preload_join(unquote(query), unquote(association), unquote(bindings), unquote(expr), unquote(preload_bindings), unquote(preload_expr), nil)
+  end
+
+  @doc "Join + Preload a nested association"
+  defmacro preload_join(query, via_association, association) do
+
+    query = quote do: preload_join(unquote(query), unquote(via_association))
+
+    # association = quote do: unquote(association)
+    # via_association_pos = quote do: named_binding_position(unquote(query), unquote(via_association))
+    # IO.inspect(via_association_pos: via_association_pos)
+    bindings = quote do: [root, {unquote(via_association), via}]
+    expr = quote do: assoc(via, unquote(association))
+
+    preload_bindings = quote do: [root, {unquote(association), ass}, {unquote(via_association), via}]
+    preload_expr = quote do: [{unquote(via_association), unquote(association)}]
+    # preload_expr = quote do: [{unquote(via_association), {via, {unquote(association), via}}}]
+
+    quote do: do_preload_join(unquote(query), unquote(association), unquote(bindings), unquote(expr), unquote(preload_bindings), unquote(preload_expr), nil)
+  end
+
+  @doc "Join + Preload two nested associations"
+  defmacro preload_join(query, via_association_a, via_association_b, association) do
+
+    query = quote do: preload_join(unquote(query), unquote(via_association_a), unquote(via_association_b))
+
+    # association = quote do: unquote(association)
+    # via_association_a_pos = named_binding_position(query, via_association_a)
+    # IO.inspect(via_association_a_pos: via_association_a_pos)
+    bindings = quote do: [root, {via_b, unquote(via_association_b)}]
+    expr = quote do: assoc(via_b, unquote(association))
+
+    preload_bindings = quote do: [root, a, b, x]
+    # TODO: construct proper preload expr with vars to avoid extra queries
+    preload_expr = quote do: [{unquote(via_association_a), [{unquote(via_association_b), [unquote(association)]}]}]
+
+    quote do: do_preload_join(unquote(query), unquote(association), unquote(bindings), unquote(expr), unquote(preload_bindings), unquote(preload_expr), nil)
+  end
+
+  defp named_binding_position(query, binding) do
+    Map.get(query.aliases, binding)
+  end
+
 end
