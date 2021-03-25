@@ -103,20 +103,46 @@ API documentation for the upstream QueryElf is available at [HexDocs](https://he
 
 The `join_preload` macro tells Ecto to perform a join and preload of (up to three nested levels of) associations.
 
-So instead of having to write: 
-```elixir
-    query
-    |> join(:left, [o, activity: activity], assoc(:my_like), as: :my_like)
-    |> preload([l, activity: activity, my_like: my_like], activity: {activity, [my_like: my_like]})
+By default, Ecto preloads associations using a separate query for each association, which can degrade performance.
+
+You could make it run faster by using a combination of join/preload, but that requires a bit of boilerplate (see examples below).
+
+### Examples using just Ecto
+```
+  query
+  |> join(:left, [o, activity: activity], assoc(:my_like), as: :my_like)
+  |> preload([l, activity: activity, my_like: my_like], activity: {activity, [my_like: my_like]})
 ```
 
-One can simply write:
-```elixir
-    query
-    |> join_preload([:activity, :my_like]
+Ecto requires calling `Query.join/4`, `Query.assoc/3` and `Query.preload/2`. Here's another example:
+
+```
+  Invoice
+  |> join(:left, [i], assoc(i, :customer), as: :customer)
+  |> join(:left, [i], assoc(i, :lines), as: :lines)
+  |> preload([lines: v, customers: c], lines: v, customer: c)
+  |> Repo.all()
 ```
 
-`join_preload` automatically makes use of `reusable_join` so calling it multiple times for the same association has no ill effects.
+## Example using Preloader
+
+With `Ecto.Preloader`, you can accomplish this with just one line of code.
+
+```
+  query
+  |> join_preload([:activity, :my_like]
+```
+
+```
+  Invoice
+  |> preload_join(:customer)
+  |> preload_join(:lines)
+  |> Repo.all()
+```
+
+As a bonus, `join_preload` automatically makes use of `reusable_join` so calling it multiple times for the same association has no ill effects.
+
+Preloader was orginally forked from [ecto_preloader](https://hex.pm/packages/ecto_preloader) (licensed under WTFPL)
 
 
 ## ReusableJoin Documentation
