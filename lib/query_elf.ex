@@ -178,6 +178,8 @@ defmodule QueryElf do
     quote bind_quoted: [opts: opts] do
       import Ecto.Query
       require QueryElf.Plugins.ReusableJoin
+      import QueryElf.Plugins.Preloader
+      require QueryElf.Plugins.Preloader
 
       schema = Keyword.fetch!(opts, :schema)
       # IO.inspect(schema: Keyword.fetch!(opts, :schema))
@@ -220,6 +222,13 @@ defmodule QueryElf do
       plugins
       |> Enum.map(fn {plugin, opts} -> plugin.using(opts) end)
       |> Code.eval_quoted([], __ENV__)
+
+      @doc "Join + Preload (up to three nested levels of) associations"
+      defmacro join_preload(query, associations, on \\ true) when is_list(associations) do
+
+        quote do: QueryElf.Plugins.Preloader.preload_join(unquote(query), unquote_splicing(associations), unquote(on))
+      end
+
     end
   end
 

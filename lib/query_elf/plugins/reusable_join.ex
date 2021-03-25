@@ -1,6 +1,20 @@
 defmodule QueryElf.Plugins.ReusableJoin do
   import Ecto.Query
 
+  defmacro do_reusable_join_as(query, qual, bindings, expr, opts, as) do
+    # IO.inspect(join_as: as)
+    quote do
+      query = Ecto.Queryable.to_query(unquote(query))
+
+      if Enum.any?(query.joins, &(&1.as == unquote(as))) do
+        query
+      else
+        query
+        |> join(unquote(qual), unquote(bindings), unquote(expr), unquote(opts))
+      end
+    end
+  end
+
   @doc """
   Similar to `Ecto.Query.join/{4,5}`, but can be called multiple times with the same alias.
 
@@ -18,17 +32,11 @@ defmodule QueryElf.Plugins.ReusableJoin do
   in which case there will be only one join in the query that can be reused by multiple filters.
   """
   defmacro reusable_join(query, qual, bindings, expr, opts) do
-    IO.inspect(join_alias: Keyword.fetch!(opts, :as))
-    quote do
-      query = Ecto.Queryable.to_query(unquote(query))
-      join_alias = unquote(Keyword.fetch!(opts, :as))
+    as = Keyword.fetch!(opts, :as)
+    # IO.inspect(join_alias: as)
 
-      if Enum.any?(query.joins, &(&1.as == join_alias)) do
-        query
-      else
-        query
-        |> join(unquote(qual), unquote(bindings), unquote(expr), unquote(opts))
-      end
-    end
+    quote do: do_reusable_join_as(unquote(query), unquote(qual), unquote(bindings), unquote(expr), unquote(opts), unquote(as))
   end
+
+
 end
