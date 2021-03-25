@@ -4,7 +4,7 @@
 
 This QueryElf library was originally forked from [UpLearn](https://gitlab.com/up-learn-uk/query-elf)
 
-Some changes were made as needed for usage in [Bonfire](http://bonfire.cafe) and the following extra plugins added:
+Some changes were made as needed for usage in [Bonfire](http://bonfire.cafe) and it bundles the following plugins:
 - [`Preloader`](#preloader-documentation)
 - [`ReusableJoin`](#reusablejoin-documentation)
 
