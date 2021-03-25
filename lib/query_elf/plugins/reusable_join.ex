@@ -31,7 +31,7 @@ defmodule QueryElf.Plugins.ReusableJoin do
   To solve this, it is recommended to use this macro instead of the default `Ecto.Query.join/{4,5}`,
   in which case there will be only one join in the query that can be reused by multiple filters.
   """
-  defmacro reusable_join(query, qual, bindings, expr, opts) do
+  defmacro reusable_join(query, qual \\ :left, bindings, expr, opts) do
     as = Keyword.fetch!(opts, :as)
     # IO.inspect(join_alias: as)
 
