@@ -222,6 +222,10 @@ defmodule QueryElf.Plugins.AutomaticFilters do
         dynamic([s], field(s, unquote(field)) == ^value)
       end
 
+      def filter(unquote(:"#{field}__eq"), value, _query) do
+        dynamic([s], field(s, unquote(field)) == ^value)
+      end
+
       def filter(unquote(:"#{field}__neq"), value, _query) do
         dynamic([s], field(s, unquote(field)) != ^value)
       end
