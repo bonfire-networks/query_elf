@@ -2,7 +2,7 @@ defmodule QueryElf.Plugins.ReusableJoin do
   import Ecto.Query
 
   defmacro do_reusable_join_as(query, qual, bindings, expr, opts, as) do
-    # IO.inspect(join_as: as)
+    #IO.inspect(join_as: as)
     quote do
       query = Ecto.Queryable.to_query(unquote(query))
 
@@ -33,7 +33,7 @@ defmodule QueryElf.Plugins.ReusableJoin do
   """
   defmacro reusable_join(query, qual \\ :left, bindings, expr, opts) do
     as = Keyword.fetch!(opts, :as)
-    # IO.inspect(join_alias: as)
+    #IO.inspect(join_alias: as)
 
     quote do: do_reusable_join_as(unquote(query), unquote(qual), unquote(bindings), unquote(expr), unquote(opts), unquote(as))
   end

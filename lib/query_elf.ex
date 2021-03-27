@@ -182,7 +182,7 @@ defmodule QueryElf do
       require QueryElf.Plugins.Preloader
 
       schema = Keyword.fetch!(opts, :schema)
-      # IO.inspect(schema: Keyword.fetch!(opts, :schema))
+      #IO.inspect(schema: Keyword.fetch!(opts, :schema))
 
       plugins =
         opts

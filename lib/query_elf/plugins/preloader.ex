@@ -48,12 +48,12 @@ defmodule QueryElf.Plugins.Preloader do
 
   # defp do_preload_join(query, association, bindings, expr, preload_bindings, preload_expr, caller) do
   #   IO.inspect(query: query)
-  #   # IO.inspect(queryable: Ecto.Queryable.to_query(query))
-  #   # IO.inspect(binding: bindings)
-  #   # IO.inspect(expr: expr)
-  #   # IO.inspect(association: association)
-  #   # IO.inspect(preload_bindings: preload_bindings)
-  #   # IO.inspect(preload_expr: preload_expr)
+  #   #IO.inspect(queryable: Ecto.Queryable.to_query(query))
+  #   #IO.inspect(binding: bindings)
+  #   #IO.inspect(expr: expr)
+  #   #IO.inspect(association: association)
+  #   #IO.inspect(preload_bindings: preload_bindings)
+  #   #IO.inspect(preload_expr: preload_expr)
 
   #     query
   #     |> Join.build(:left, bindings, expr, nil, nil, association, nil, nil, caller)
@@ -64,19 +64,19 @@ defmodule QueryElf.Plugins.Preloader do
   # end
 
   defmacro do_preload_join(query, association, bindings, expr, preload_bindings, preload_expr, on) do
-    # IO.inspect(query: query)
-    # IO.inspect(queryable: Ecto.Queryable.to_query(query))
-    # IO.inspect(bindings: bindings)
-    # IO.inspect(expr: expr)
-    # IO.inspect(association: association)
+    #IO.inspect(query: query)
+    #IO.inspect(queryable: Ecto.Queryable.to_query(query))
+    #IO.inspect(bindings: bindings)
+    #IO.inspect(expr: expr)
+    #IO.inspect(association: association)
 
     # on = quote do: [as: unquote(association)]
     # on = quote do: [{as, unquote(association)}] ++ unquote(opts) # FIXME if we need to pass on
     on = quote do: [as: unquote(association), on: unquote(on)]
-    # IO.inspect(on: on)
+    #IO.inspect(on: on)
 
-    # IO.inspect(preload_bindings: preload_bindings)
-    # IO.inspect(preload_expr: preload_expr)
+    #IO.inspect(preload_bindings: preload_bindings)
+    #IO.inspect(preload_expr: preload_expr)
 
     quote do
 
@@ -107,7 +107,7 @@ defmodule QueryElf.Plugins.Preloader do
 
     # association = quote do: unquote(association)
     # via_association_pos = quote do: named_binding_position(unquote(query), unquote(via_association))
-    # IO.inspect(via_association_pos: via_association_pos)
+    #IO.inspect(via_association_pos: via_association_pos)
     bindings = quote do: [root, {unquote(via_association), via}]
     expr = quote do: assoc(via, unquote(association))
 
@@ -131,7 +131,7 @@ defmodule QueryElf.Plugins.Preloader do
 
     # association = quote do: unquote(association)
     # via_association_a_pos = named_binding_position(query, via_association_a)
-    # IO.inspect(via_association_a_pos: via_association_a_pos)
+    #IO.inspect(via_association_a_pos: via_association_a_pos)
     bindings = quote do: [root, {via_b, unquote(via_association_b)}]
     expr = quote do: assoc(via_b, unquote(association))
 

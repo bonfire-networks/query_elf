@@ -72,7 +72,7 @@ defmodule QueryElf.Plugins.AutomaticFilters do
   def using(opts) do
 
     fields = Keyword.fetch!(opts, :fields)
-    # IO.inspect(fields: fields)
+    #IO.inspect(fields: fields)
 
     quote bind_quoted: [fields: fields] do
       require QueryElf.Plugins.AutomaticFilters
@@ -81,8 +81,8 @@ defmodule QueryElf.Plugins.AutomaticFilters do
       |> Enum.map(fn field ->
         type = @schema.__schema__(:type, field)
 
-        # IO.inspect(field: field)
-        # IO.inspect(type: type)
+        #IO.inspect(field: field)
+        #IO.inspect(type: type)
 
         QueryElf.Plugins.AutomaticFilters.__define_filters__(field, type)
       end)
