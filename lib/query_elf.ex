@@ -224,9 +224,9 @@ defmodule QueryElf do
       |> Code.eval_quoted([], __ENV__)
 
       @doc "Join + Preload (up to three nested levels of) associations"
-      defmacro join_preload(query, associations, on \\ true) when is_list(associations) do
+      defmacro join_preload(query, associations) when is_list(associations) do
 
-        quote do: QueryElf.Plugins.Preloader.preload_join(unquote(query), unquote_splicing(associations), unquote(on))
+        quote do: QueryElf.Plugins.Preloader.preload_join(unquote(query), unquote_splicing(associations))
       end
 
     end
