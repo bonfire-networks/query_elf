@@ -169,7 +169,7 @@ defmodule QueryElf do
   """
   @callback base_query :: Ecto.Queryable.t()
 
-  @optional_callbacks [filter: 3, sort: 4, base_query: 0]
+  @optional_callbacks filter: 3, sort: 4, base_query: 0
 
   import Ecto.Query
 
