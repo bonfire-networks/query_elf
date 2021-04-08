@@ -42,7 +42,7 @@ defmodule QueryElf.Plugins.Preloader do
 
   import Ecto, only: [assoc: 2]
   require QueryElf.Plugins.ReusableJoin
-  alias QueryElf.Plugins.Preloader
+  # alias QueryElf.Plugins.Preloader
   # alias Ecto.Query.Builder.{Join, Preload}
 
 
