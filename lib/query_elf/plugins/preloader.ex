@@ -19,8 +19,9 @@ defmodule QueryElf.Plugins.Preloader do
 
   Invoice
   |> join(:left, [i], assoc(i, :customer), as: :customer)
+  |> join(:left, [i, c], assoc(c, :account), as: :account)
   |> join(:left, [i], assoc(i, :lines), as: :lines)
-  |> preload([lines: v, customers: c], lines: v, customer: c)
+  |> preload([lines: v, customers: c, account: a], lines: v, customer: {c, [a: account]})
   |> Repo.all()
   ```
 
@@ -33,8 +34,8 @@ defmodule QueryElf.Plugins.Preloader do
   import Ecto.Preloader
 
   Invoice
-  |> preload_join(:customer)
-  |> preload_join(:lines)
+  |> join_preload([:customer, :account])
+  |> join_preload([:lines])
   |> Repo.all()
   ```
 
@@ -99,7 +100,7 @@ defmodule QueryElf.Plugins.Preloader do
     quote do: do_preload_join(unquote(query), unquote(association), unquote(bindings), unquote(expr), unquote(preload_bindings), unquote(preload_expr) )
   end
 
-  #doc "Join + Preload a nested association"
+  #doc "Join + Preload 2 nested associations"
   defmacro preload_join(query, via_association, association ) when is_atom(via_association) and is_atom(association) do
 
     query = quote do: preload_join(unquote(query), unquote(via_association))
@@ -126,32 +127,32 @@ defmodule QueryElf.Plugins.Preloader do
     quote do: do_preload_join(unquote(query), unquote(association), unquote(bindings), unquote(expr), unquote(preload_bindings), unquote(preload_expr) )
   end
 
-  #doc "Join + Preload an assoc within 2 levels of nested associations"
-  defmacro preload_join(query, via_association_a, via_association_b, association) when is_atom(via_association_a) and is_atom(via_association_b) and is_atom(association) do
+  #doc "Join + Preload an assoc within 3 levels of nested associations"
+  defmacro preload_join(query, via_association_1, via_association_2, association) when is_atom(via_association_1) and is_atom(via_association_2) and is_atom(association) do
 
-    query = quote do: preload_join(unquote(query), unquote(via_association_a), unquote(via_association_b))
+    query = quote do: preload_join(unquote(query), unquote(via_association_1), unquote(via_association_2))
     # |> IO.inspect(label: "pre level 3")
 
     # association = quote do: unquote(association)
-    # via_association_a_pos = named_binding_position(query, via_association_a)
-    #IO.inspect(via_association_a_pos: via_association_a_pos)
-    # bindings = quote do: [root, {via_b, unquote(via_association_b)}] # bad
-    bindings = quote do: [root, {unquote(via_association_b), via_b}] # good
-    expr = quote do: assoc(via_b, unquote(association))
+    # via_association_1_pos = named_binding_position(query, via_association_1)
+    #IO.inspect(via_association_1_pos: via_association_1_pos)
+    # bindings = quote do: [root, {via_2, unquote(via_association_2)}] # bad
+    bindings = quote do: [root, {unquote(via_association_2), via_2}] # good
+    expr = quote do: assoc(via_2, unquote(association))
 
     # preload_bindings = quote do: [root, a, b, x]
-    # preload_expr = quote do: [{unquote(via_association_a), [{unquote(via_association_b), [unquote(association)]}]}]
+    # preload_expr = quote do: [{unquote(via_association_1), [{unquote(via_association_2), [unquote(association)]}]}]
 
     preload_bindings = quote do: [root,
       {unquote(association), ass},
-      {unquote(via_association_a), via_a},
-      {unquote(via_association_b), via_b}
+      {unquote(via_association_1), via_1},
+      {unquote(via_association_2), via_2}
     ]
     preload_expr = quote do: [
       {
-        unquote(via_association_a), {via_a,
+        unquote(via_association_1), {via_1,
           [
-            {unquote(via_association_b), {via_b,
+            {unquote(via_association_2), {via_2,
               [{unquote(association), ass}]
               }
             }
@@ -163,31 +164,31 @@ defmodule QueryElf.Plugins.Preloader do
     # |> IO.inspect(label: "post level 3")
   end
 
-  #doc "Join + Preload an assoc within 3 levels of nested associations"
-  defmacro preload_join(query, via_association_a, via_association_b, via_association_c, association) when is_atom(via_association_a) and is_atom(via_association_b) and is_atom(via_association_c) and is_atom(association) do
+  #doc "Join + Preload an assoc within 4 levels of nested associations"
+  defmacro preload_join(query, via_association_1, via_association_2, via_association_3, association) when is_atom(via_association_1) and is_atom(via_association_2) and is_atom(via_association_3) and is_atom(association) do
 
-    query = quote do: preload_join(unquote(query), unquote(via_association_a), unquote(via_association_b), unquote(via_association_c))
+    query = quote do: preload_join(unquote(query), unquote(via_association_1), unquote(via_association_2), unquote(via_association_3))
     # |> IO.inspect(label: "pre level 4")
 
-    bindings = quote do: [root, {unquote(via_association_c), via_c}]
-    expr = quote do: assoc(via_c, unquote(association))
+    bindings = quote do: [root, {unquote(via_association_3), via_3}]
+    expr = quote do: assoc(via_3, unquote(association))
 
     # preload_bindings = quote do: [root, a, b, x]
-    # preload_expr = quote do: [{unquote(via_association_a), [{unquote(via_association_b), [unquote(association)]}]}]
+    # preload_expr = quote do: [{unquote(via_association_1), [{unquote(via_association_2), [unquote(association)]}]}]
 
     preload_bindings = quote do: [root,
       {unquote(association), ass},
-      {unquote(via_association_a), via_a},
-      {unquote(via_association_b), via_b},
-      {unquote(via_association_c), via_c}
+      {unquote(via_association_1), via_1},
+      {unquote(via_association_2), via_2},
+      {unquote(via_association_3), via_3}
     ]
     preload_expr = quote do: [
       {
-        unquote(via_association_a), {via_a,
+        unquote(via_association_1), {via_1,
           [
-            {unquote(via_association_b), {via_b,
+            {unquote(via_association_2), {via_2,
                 [
-                    {unquote(via_association_c), {via_c,
+                    {unquote(via_association_3), {via_3,
                       [{unquote(association), ass}]
                     }
                   }
@@ -200,6 +201,53 @@ defmodule QueryElf.Plugins.Preloader do
     ]
     quote do: do_preload_join(unquote(query), unquote(association), unquote(bindings), unquote(expr), unquote(preload_bindings), unquote(preload_expr))
     # |> IO.inspect(label: "post level 4")
+  end
+
+  #doc "Join + Preload an assoc within 5 levels of nested associations"
+  defmacro preload_join(query, via_association_1, via_association_2, via_association_3, via_association_4, association) when is_atom(via_association_1) and is_atom(via_association_2) and is_atom(via_association_3) and is_atom(via_association_4) and is_atom(association) do
+
+    query = quote do: preload_join(unquote(query), unquote(via_association_1), unquote(via_association_2), unquote(via_association_3), unquote(via_association_4))
+    # |> IO.inspect(label: "pre level 5")
+
+    bindings = quote do: [root, {unquote(via_association_4), via_4}]
+    expr = quote do: assoc(via_4, unquote(association))
+
+    # preload_bindings = quote do: [root, a, b, x]
+    # preload_expr = quote do: [{unquote(via_association_1), [{unquote(via_association_2), [unquote(association)]}]}]
+
+    preload_bindings = quote do: [root,
+      {unquote(association), ass},
+      {unquote(via_association_1), via_1},
+      {unquote(via_association_2), via_2},
+      {unquote(via_association_3), via_3},
+      {unquote(via_association_4), via_4}
+    ]
+    preload_expr = quote do: [
+      {
+        unquote(via_association_1), {via_1,
+          [
+            {unquote(via_association_2), {via_2,
+                [
+                  {unquote(via_association_3), {via_3,
+                      [
+                        {unquote(via_association_4), {via_4,
+                            [
+                              {unquote(association), ass}
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+    quote do: do_preload_join(unquote(query), unquote(association), unquote(bindings), unquote(expr), unquote(preload_bindings), unquote(preload_expr))
+    # |> IO.inspect(label: "post level 5")
   end
 
   # defp named_binding_position(query, binding) do

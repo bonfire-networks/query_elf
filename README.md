@@ -101,7 +101,7 @@ API documentation for the upstream QueryElf is available at [HexDocs](https://he
 
 ## Preloader Documentation
 
-The `join_preload` macro tells Ecto to perform a join and preload of (up to three nested levels of) associations.
+The `join_preload` macro tells Ecto to perform a join and preload of (up to 5 nested levels of) associations.
 
 By default, Ecto preloads associations using a separate query for each association, which can degrade performance.
 
