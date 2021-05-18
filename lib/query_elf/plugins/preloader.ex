@@ -46,6 +46,17 @@ defmodule QueryElf.Plugins.Preloader do
   # alias QueryElf.Plugins.Preloader
   # alias Ecto.Query.Builder.{Join, Preload}
 
+  @doc "Join + Preload (up to three nested levels of) associations"
+  defmacro join_preload(query, associations) when is_list(associations) do
+    quote do: preload_join(unquote(query), unquote_splicing(associations))
+  end
+  defmacro join_preload(query, association) when is_atom(association) do
+    quote do: preload_join(unquote(query), association)
+  end
+  defmacro join_preload(query, associations) do
+    IO.inspect(join_preload_failed: associations)
+    query
+  end
 
   # defp do_preload_join(query, association, bindings, expr, preload_bindings, preload_expr, caller) do
   #   IO.inspect(query: query)
